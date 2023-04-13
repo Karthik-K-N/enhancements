@@ -74,30 +74,29 @@ Items marked with (R) are required *prior to targeting to a milestone / release*
 
 ## Summary
 
-This proposal aims at enabling dynamic node resizing. This will help in resizing cluster resource capacity by just updating resources of nodes rather than adding new node or removing existing node and 
-also enable node configurations to be reflected at the node and cluster levels automatically without the need to manually resetting the kubelet
+The proposal aims at enabling dynamic node resizing. This will help in updating cluster resource capacity by just resizing compute resources of nodes rather than adding new node or removing existing node from a cluster.
+The updated node configurations are to be reflected at the node and cluster levels automatically without the need to reset the kubelet.
 
-This proposal also aims to improvise the initialisation and reinitialisation of resource managers like cpu manager, memory manager with the dynamic change in machine's CPU and memory configurations.
+This proposal also aims to improve the initialization and reinitialization of resource managers, such as the CPU manager and memory manager, in response to changes in a node's CPU and memory configurations.
 
 ## Motivation
-In a typical Kubernetes environment, the cluster resources may need to be altered because of various reasons like
-- Incorrect resource assignment while creating a cluster.
-- Workload on cluster is increased over time and leading to add more resources to cluster.
-- Workload on cluster is decreased over time and leading to resources under utilization.
+In a typical Kubernetes environment, the cluster resources may need to be altered due to following reasons:
+- Incorrect resource assignment during cluster creation.
+- Increased workload over time, leading to the need for additional resources in the cluster.
+- Decreased workload over time, leading to resource underutilization in the cluster.
 
-To handle these scenarios currently we can 
-- Horizontally scale up or down cluster by the addition or removal of compute nodes
-- Vertically scale up or down cluster by increasing or decreasing the node’s capacity, but the current workaround for the node resize to be captured by the cluster is only by the means of restarting Kubelet.
+To handle these scenarios, we can:
+- Horizontally scale up or down the cluster by adding or removing compute nodes.
+- Vertically scale up or down the cluster by increasing or decreasing node capacity. However, currently, the workaround for capturing node resizing in the cluster involves restarting the Kubelet.
 
-The dynamic node resize will give advantages in case of scenarios like
-- Handling the resource demand with limited set of machines by increasing the capacity of existing machines rather than creating new ones.
-- Creating/Deleting new machine takes more time when compared to increasing/decreasing the capacity of existing ones.
+Dynamic node resizing will provide advantages in scenarios such as:
+- Handling resource demand with a limited set of nodes by increasing the capacity of existing nodes instead of creating new nodes.
+- Creating or deleting new nodes takes more time compared to increasing or decreasing the capacity of existing nodes.
 
 ### Goals
 
-* Dynamically resize the node without restarting the kubelet
-* Add ability to reinitialize resource managers(cpu manager, memory manager) to adopt changes in machine resource
-
+* Dynamically resize the node without restarting the kubelet.
+* Ability to reinitialize resource managers (CPU manager, memory manager) to adopt changes in node's resource.
 
 ### Non-Goals
 
@@ -105,21 +104,19 @@ The dynamic node resize will give advantages in case of scenarios like
 
 ## Proposal
 
-This KEP adds a polling mechanism in kubelet to fetch the machine-info using cadvisor, The information will be fetched repeatedly based on configured time interval.
-Later node status updater will take care of updating this information at node level.
+This KEP adds a polling mechanism in kubelet to fetch the machine-information using cAdvisor, The information will be fetched periodically based on a configured time interval, after which the node status updater is responsible for updating this information at node level in the cluster.
 
-This KEP also improvises the resource managers like memory manager, cpu manager initialization and reinitialization so that these resource managers will 
-adapt to the dynamic change in machine configurations. 
+Additionally, this KEP aims to improve the initialization and reinitialization of resource managers, such as the memory manager and CPU manager, so that they can adapt to changes in node's configurations.
 
 ### User Stories (Optional)
 
 #### Story 1
 
-As a cluster admin, I want to increase the cluster resource capacity without adding a new node to the cluster.
+As a cluster admin, I must be able to increase the cluster resource capacity without adding a new node to the cluster.
 
 #### Story 2
 
-As a cluster admin, I want to decrease the cluster resource capacity without removing an existing node from the cluster.
+As a cluster admin, I must be able to decrease the cluster resource capacity without removing an existing node from the cluster.
 
 ### Notes/Constraints/Caveats (Optional)
 
@@ -148,12 +145,12 @@ Consider including folks who also work outside the SIG or subproject.
 
 ## Design Details
 
-Below diagram is shows the interaction between kubelet and cadvisor
+Below diagram is shows the interaction between kubelet and cAdvisor.
 
 ```
 +----------+                    +-----------+                   +-----------+                  +--------------+
 |          |                    |           |                   |           |                  |              |
-|   node   |                    |  kubelet  |                   |  cadvisor |                  | machine-info |
+|   node   |                    |  kubelet  |                   |  cAdvisor |                  | machine-info |
 |          |                    |           |                   |           |                  |              |
 +----+-----+                    +-----+-----+                   +-----+-----+                  +-------+------+
      |                                |                               |                                |
@@ -188,14 +185,14 @@ Below diagram is shows the interaction between kubelet and cadvisor
 ```
 
 The interaction sequence is as follows
-1. Kubelet will be polling cadvisor with interval of configured time like one minute to fetch the machine resource information
-2. Cadvisor will fetch and update the machine resource information
-3. kubelet cache will be updated with the latest machine resource information
-4. node status updater will update the node's status with new resource information
-5. In case of shrink in cluster resources will re-run the pod admission to evict pods which lack resources
-6. kubelet will reinitialize the resource managers to keep them up to date with dynamic resource changes
+1. Kubelet will be polling cAdvisor in interval of configured time to fetch the machine resource information.
+2. cAdvisor will fetch and update the machine resource information.
+3. Kubelet's cache will be updated with the latest machine resource information.
+4. Node status updater will update the node's status with latest resource information.
+5. In case of a decrease in cluster resources, the pod admission controller will evict pods
+6. Kubelet will reinitialize the resource managers to keep them up to date with dynamic resource changes.
 
-Note: In case of increase in cluster resources scheduler will automatically schedule any pending pods
+Note: In case of increase in cluster resources, the scheduler will automatically schedule any pending pods.
 
 ### Test Plan
 

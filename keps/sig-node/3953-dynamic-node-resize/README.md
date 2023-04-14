@@ -145,7 +145,7 @@ Consider including folks who also work outside the SIG or subproject.
 
 ## Design Details
 
-Below diagram is shows the interaction between kubelet and cAdvisor.
+Below diagram shows the interaction between kubelet and cAdvisor.
 
 ```
 +----------+                    +-----------+                   +-----------+                  +--------------+
